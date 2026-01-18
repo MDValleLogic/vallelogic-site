@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NetRunner Dashboard • ValleLogic</title>
+  <link rel="stylesheet" href="../assets/style.css"/>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div>NetRunner</div>
+        </div>
+        <div class="nav">
+          <a href="../">Home</a>
+          <a href="#" class="btn">Add Device</a>
+          <a href="#" class="btn">Create Test</a>
+          <a href="#" class="btn btn-primary">Deploy</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="app">
+      <aside class="sidebar card">
+        <div class="card-pad">
+          <div class="side-title">Dashboard</div>
+          <div class="side-item active">Overview <span>↗</span></div>
+          <div class="side-item">Devices <span>12</span></div>
+          <div class="side-item">URL Tests <span>38</span></div>
+          <div class="side-item">File Tests <span>8</span></div>
+          <div class="side-item">Video Tests <span>4</span></div>
+          <hr class="sep"/>
+          <div class="side-title">Quick actions</div>
+          <input class="input" placeholder="Search (device, url, site)"/>
+          <div style="height:10px"></div>
+          <a class="btn btn-primary" style="width:100%;" href="#">New Scheduled Test</a>
+          <div style="height:10px"></div>
+          <a class="btn" style="width:100%;" href="#">Export Results</a>
+          <p style="margin:14px 0 0; color:var(--muted2); font-size:12px;">
+            Last updated: <span data-now></span>
+          </p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section class="kpis">
+          <div class="card card-pad kpi">
+            <div class="label">Edge Health</div>
+            <div class="value">Good</div>
+            <div class="hint">3 warnings • 0 critical</div>
+          </div>
+          <div class="card card-pad kpi">
+            <div class="label">Median URL RTT</div>
+            <div class="value">182 ms</div>
+            <div class="hint">+12 ms vs 24h</div>
+          </div>
+          <div class="card card-pad kpi">
+            <div class="label">Throughput</div>
+            <div class="value">214 Mbps</div>
+            <div class="hint">Down / Upload scheduled</div>
+          </div>
+          <div class="card card-pad kpi">
+            <div class="label">Video Experience</div>
+            <div class="value">Pass</div>
+            <div class="hint">2 sessions in last 24h</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-pad">
+            <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+              <div>
+                <h2 class="section-title" style="margin-bottom:4px;">Recent test runs</h2>
+                <p class="section-sub" style="margin:0;">A simple “what changed?” view for operators.</p>
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <a class="btn" href="#">Filter</a>
+                <a class="btn" href="#">Last 24h</a>
+                <a class="btn btn-primary" href="#">Create test</a>
+              </div>
+            </div>
+
+            <table class="table" style="margin-top:12px;">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Type</th>
+                  <th>Target</th>
+                  <th>Result</th>
+                  <th>Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>08:12</td>
+                  <td>URL</td>
+                  <td>github.com</td>
+                  <td><span class="pill ok">OK</span></td>
+                  <td>RTT 164 ms</td>
+                </tr>
+                <tr>
+                  <td>07:58</td>
+                  <td>URL</td>
+                  <td>vercel.com</td>
+                  <td><span class="pill warn">WARN</span></td>
+                  <td>RTT 412 ms</td>
+                </tr>
+                <tr>
+                  <td>07:45</td>
+                  <td>File</td>
+                  <td>Upload target</td>
+                  <td><span class="pill ok">OK</span></td>
+                  <td>Up 86 Mbps</td>
+                </tr>
+                <tr>
+                  <td>07:31</td>
+                  <td>Video</td>
+                  <td>VOD stream</td>
+                  <td><span class="pill ok">PASS</span></td>
+                  <td>Start 2.1s • No rebuffer</td>
+                </tr>
+                <tr>
+                  <td>07:12</td>
+                  <td>URL</td>
+                  <td>microsoft.com</td>
+                  <td><span class="pill bad">FAIL</span></td>
+                  <td>Timeout</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="grid grid-2">
+          <div class="card card-pad">
+            <h3 style="margin:0 0 8px; letter-spacing:-0.02em;">Devices</h3>
+            <p style="margin:0; color:var(--muted); line-height:1.6;">
+              NetRunner appliances check in securely and run the schedules assigned to their site.
+            </p>
+            <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+              <a class="btn btn-primary" href="#">Add device</a>
+              <a class="btn" href="#">View devices</a>
+            </div>
+          </div>
+          <div class="card card-pad">
+            <h3 style="margin:0 0 8px; letter-spacing:-0.02em;">Schedules</h3>
+            <p style="margin:0; color:var(--muted); line-height:1.6;">
+              Keep it simple: run tests every 5m / 15m / hourly and alert when baselines drift.
+            </p>
+            <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+              <a class="btn btn-primary" href="#">Create schedule</a>
+              <a class="btn" href="#">View schedules</a>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../assets/app.js"></script>
+</body>
+</html>
