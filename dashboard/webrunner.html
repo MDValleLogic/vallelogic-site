@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>NetRunner | WebRunner</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; max-width: 1100px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin: 14px 0; }
+    .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: end; }
+    label { font-size: 13px; color: #444; }
+    input, select, textarea, button { font-size: 14px; }
+    input, select { padding: 8px; min-width: 140px; }
+    textarea { width: 100%; height: 240px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; padding: 10px; }
+    button { padding: 10px 14px; border-radius: 8px; border: 1px solid #222; background: #fff; cursor: pointer; }
+    button.primary { background: #111; color: #fff; }
+    .muted { color: #666; font-size: 13px; }
+    .ok { color: #0a7a2f; font-weight: 600; }
+    .err { color: #b00020; font-weight: 600; }
+    .topbar { display:flex; justify-content: space-between; align-items:center; gap: 10px; }
+    .pill { font-size: 12px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 999px; }
+    code { background:#f6f6f6; padding:2px 6px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h2>NetRunner — WebRunner (Cloud UI)</h2>
+    <div>
+      <span id="authState" class="pill">Not signed in</span>
+      <button id="signOutBtn" style="display:none;">Sign out</button>
+    </div>
+  </div>
+  <div class="muted">
+    This page stores WebRunner config in the cloud (Supabase). Next step will be your Pi agent pulling this config securely.
+  </div>
+
+  <div class="card" id="authCard">
+    <h3>Sign in</h3>
+    <div class="muted">Enter your email and we’ll send a magic link.</div>
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>Email</label><br />
+        <input id="email" type="email" placeholder="you@domain.com" />
+      </div>
+      <button class="primary" id="sendLinkBtn">Send magic link</button>
+    </div>
+    <div id="authMsg" class="muted" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="card" id="configCard" style="display:none;">
+    <h3>WebRunner Configuration</h3>
+    <div class="row">
+      <div>
+        <label>Monitor name</label><br />
+        <input id="monitorName" type="text" value="home" />
+      </div>
+      <div>
+        <label>Interval</label><br />
+        <select id="interval">
+          <option value="5">5 min</option>
+          <option value="10">10 min</option>
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+          <option value="60">60 min</option>
+        </select>
+      </div>
+      <div>
+        <label>Timeout (sec)</label><br />
+        <input id="timeout" type="number" min="5" max="60" value="15" />
+      </div>
+      <div style="flex:1"></div>
+      <button id="loadBtn">Load</button>
+      <button class="primary" id="saveBtn">Save</button>
+    </div>
+
+    <p><b>URLs (max 100, one per line)</b></p>
+    <textarea id="urls" placeholder="https://example.com&#10;https://www.cloudflare.com"></textarea>
+    <div class="muted">Tip: You can paste hostnames without https:// — we’ll normalize them later in the agent step.</div>
+
+    <div id="status" style="margin-top:10px;"></div>
+  </div>
+
+  <script type="module">
+    // ====== YOU WILL FILL THESE TWO VALUES IN STEP 2A.2 ======
+    const SUPABASE_URL = "PASTE_SUPABASE_URL_HERE";
+    const SUPABASE_ANON_KEY = "PASTE_SUPABASE_ANON_KEY_HERE";
+    // =========================================================
+
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const el = (id) => document.getElementById(id);
+
+    function setStatus(msg, kind="muted") {
+      const s = el("status");
+      s.className = kind === "ok" ? "ok" : (kind === "err" ? "err" : "muted");
+      s.textContent = msg;
+    }
+
+    function normalizeUrls(text) {
+      const lines = (text || "").split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+      const urls = lines.map(u => (u.startsWith("http://") || u.startsWith("https://")) ? u : `https://${u}`);
+      return urls.slice(0, 100);
+    }
+
+    async function refreshAuthUI() {
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
+
+      if (session?.user) {
+        el("authState").textContent = `Signed in: ${session.user.email}`;
+        el("signOutBtn").style.display = "inline-block";
+        el("authCard").style.display = "none";
+        el("configCard").style.display = "block";
+        setStatus("Signed in. You can Load or Save your monitor config.", "muted");
+      } else {
+        el("authState").textContent = "Not signed in";
+        el("signOutBtn").style.display = "none";
+        el("authCard").style.display = "block";
+        el("configCard").style.display = "none";
+      }
+    }
+
+    // ---------- AUTH ----------
+    el("sendLinkBtn").addEventListener("click", async () => {
+      const email = el("email").value.trim();
+      if (!email) {
+        el("authMsg").textContent = "Please enter an email.";
+        return;
+      }
+      el("authMsg").textContent = "Sending magic link…";
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.href
+        }
+      });
+      el("authMsg").textContent = error
+        ? `Error: ${error.message}`
+        : "Check your email for the magic link. Open it on this same device/browser.";
+    });
+
+    el("signOutBtn").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      await refreshAuthUI();
+    });
+
+    supabase.auth.onAuthStateChange(async () => {
+      await refreshAuthUI();
+    });
+
+    // ---------- DB (we'll create the table next) ----------
+    async function saveConfig() {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+      if (!user) return;
+
+      const name = el("monitorName").value.trim() || "home";
+      const interval_minutes = parseInt(el("interval").value, 10);
+      const timeout_seconds = parseInt(el("timeout").value, 10);
+      const urls = normalizeUrls(el("urls").value);
+
+      if (urls.length === 0) {
+        setStatus("Please enter at least one URL.", "err");
+        return;
+      }
+
+      setStatus("Saving…");
+
+      // Upsert by (user_id, name)
+      const { error } = await supabase
+        .from("webrunner_monitors")
+        .upsert({
+          user_id: user.id,
+          name,
+          interval_minutes,
+          timeout_seconds,
+          urls,
+          updated_at: new Date().toISOString()
+        }, { onConflict: "user_id,name" });
+
+      if (error) {
+        setStatus(`Save error: ${error.message}`, "err");
+      } else {
+        setStatus("Saved ✅", "ok");
+      }
+    }
+
+    async function loadConfig() {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+      if (!user) return;
+
+      const name = el("monitorName").value.trim() || "home";
+      setStatus("Loading…");
+
+      const { data: rows, error } = await supabase
+        .from("webrunner_monitors")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("name", name)
+        .limit(1);
+
+      if (error) {
+        setStatus(`Load error: ${error.message}`, "err");
+        return;
+      }
+
+      if (!rows || rows.length === 0) {
+        setStatus(`No config found for monitor "${name}". Enter URLs and click Save.`, "muted");
+        return;
+      }
+
+      const r = rows[0];
+      el("interval").value = String(r.interval_minutes ?? 5);
+      el("timeout").value = String(r.timeout_seconds ?? 15);
+      el("urls").value = (r.urls || []).join("\n");
+
+      setStatus("Loaded ✅", "ok");
+    }
+
+    el("saveBtn").addEventListener("click", saveConfig);
+    el("loadBtn").addEventListener("click", loadConfig);
+
+    // Initial UI state
+    await refreshAuthUI();
+  </script>
+</body>
+</html>
